@@ -14,24 +14,37 @@
    <string>PGP</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="manageKeysButton">
+   <widget class="QPushButton" name="generateButton">
     <property name="geometry">
      <rect>
-      <x>320</x>
+      <x>400</x>
       <y>110</y>
       <width>161</width>
       <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>Key Management</string>
+     <string>Generate Key Pair</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="receiveButton">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>410</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Receive Message</string>
     </property>
    </widget>
    <widget class="QPushButton" name="sendButton">
     <property name="geometry">
      <rect>
-      <x>320</x>
-      <y>260</y>
+      <x>400</x>
+      <y>410</y>
       <width>161</width>
       <height>41</height>
      </rect>
@@ -40,17 +53,143 @@
      <string>Send Message</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="receiveButton">
+   <widget class="QPushButton" name="deleteButton">
     <property name="geometry">
      <rect>
-      <x>320</x>
-      <y>410</y>
+      <x>610</x>
+      <y>110</y>
       <width>161</width>
       <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>Receive Message</string>
+     <string>Delete Key Pair</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="importButton">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>260</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Import</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="exportButton">
+    <property name="geometry">
+     <rect>
+      <x>610</x>
+      <y>260</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Export</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="privateTableWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>80</y>
+      <width>331</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Email</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Key Size</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Key ID</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QTableWidget" name="publicTableWidget">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>330</y>
+      <width>331</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Email</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Key Size</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Key ID</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QLabel" name="privateLabel">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>30</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Private Keyring</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="publicLabel">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>280</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Public Keyring</string>
     </property>
    </widget>
   </widget>
@@ -67,17 +206,26 @@
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuMessage">
-     <property name="title">
-      <string>Message</string>
-     </property>
-     <addaction name="actionSend_2"/>
-     <addaction name="actionReceive_2"/>
-    </widget>
-    <addaction name="actionKeys"/>
-    <addaction name="menuMessage"/>
+    <addaction name="actionImport"/>
+    <addaction name="actionExport"/>
+   </widget>
+   <widget class="QMenu" name="menuKeys">
+    <property name="title">
+     <string>Keys</string>
+    </property>
+    <addaction name="actionGenerate"/>
+    <addaction name="actionDelete"/>
+   </widget>
+   <widget class="QMenu" name="menuMessage">
+    <property name="title">
+     <string>Message</string>
+    </property>
+    <addaction name="actionSend"/>
+    <addaction name="actionReceive"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuKeys"/>
+   <addaction name="menuMessage"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSend">
@@ -96,28 +244,36 @@
     <string>Ctrl+R</string>
    </property>
   </action>
-  <action name="actionKeys">
+  <action name="actionGenerate">
    <property name="text">
-    <string>Keys</string>
+    <string>Generate</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+K</string>
+    <string>Ctrl+G</string>
    </property>
   </action>
-  <action name="actionSend_2">
+  <action name="actionDelete">
    <property name="text">
-    <string>Send</string>
+    <string>Delete</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+S</string>
+    <string>Ctrl+D</string>
    </property>
   </action>
-  <action name="actionReceive_2">
+  <action name="actionImport">
    <property name="text">
-    <string>Receive</string>
+    <string>Import</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R</string>
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="actionExport">
+   <property name="text">
+    <string>Export</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
    </property>
   </action>
  </widget>
