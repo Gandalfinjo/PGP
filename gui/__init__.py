@@ -17,7 +17,10 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
     def setup_connections(self):
         self.generateButton.clicked.connect(self.open_generate_key_pair_dialog)
+        self.actionGenerate.triggered.connect(self.open_generate_key_pair_dialog)
+
         self.sendButton.clicked.connect(self.open_send_message_dialog)
+        self.actionSend.triggered.connect(self.open_send_message_dialog)
 
     def open_generate_key_pair_dialog(self):
         self.generateKeyPairDialog = GenerateKeyPairDialog(self)
