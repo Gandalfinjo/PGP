@@ -28,6 +28,7 @@ class Ui_GenerateKeyPairDialog(object):
         self.emailLineEdit.setObjectName("emailLineEdit")
         self.passLineEdit = QtWidgets.QLineEdit(GenerateKeyPairDialog)
         self.passLineEdit.setGeometry(QtCore.QRect(190, 190, 113, 20))
+        self.passLineEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.passLineEdit.setObjectName("passLineEdit")
         self.emailLabel = QtWidgets.QLabel(GenerateKeyPairDialog)
         self.emailLabel.setGeometry(QtCore.QRect(100, 90, 47, 13))
