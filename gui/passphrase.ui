@@ -52,7 +52,7 @@
     </rect>
    </property>
    <property name="placeholderText">
-    <string>(You can leave it blank)</string>
+    <string>(If needed)</string>
    </property>
   </widget>
  </widget>

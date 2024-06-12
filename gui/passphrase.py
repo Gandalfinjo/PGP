@@ -36,7 +36,7 @@ class Ui_PassphraseDIalog(object):
         _translate = QtCore.QCoreApplication.translate
         PassphraseDIalog.setWindowTitle(_translate("PassphraseDIalog", "Enter passphrase"))
         self.passphraseLabel.setText(_translate("PassphraseDIalog", "Passphrase:"))
-        self.lineEdit.setPlaceholderText(_translate("PassphraseDIalog", "(You can leave it blank)"))
+        self.lineEdit.setPlaceholderText(_translate("PassphraseDIalog", "(If needed)"))
 
 
 if __name__ == "__main__":

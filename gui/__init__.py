@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
 
+from gui.import_key import Ui_ImportKeyDialog
 from gui.main_window import Ui_MainWindow
 from gui.generate_key_pair import Ui_GenerateKeyPairDialog
 from gui.send_message import Ui_SendMessageDialog
@@ -12,6 +13,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.generateKeyPairDialog = None
+        self.importDialog = None
         self.sendMessageDialog = None
         self.receiveMessageDialog = None
         self.setupUi(self)
@@ -20,6 +22,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
     def setup_connections(self):
         self.generateButton.clicked.connect(self.open_generate_key_pair_dialog)
         self.actionGenerate.triggered.connect(self.open_generate_key_pair_dialog)
+
+        self.importButton.clicked.connect(self.open_import_key_dialog)
+        self.actionImport.triggered.connect(self.open_import_key_dialog)
 
         self.sendButton.clicked.connect(self.open_send_message_dialog)
         self.actionSend.triggered.connect(self.open_send_message_dialog)
@@ -32,6 +37,26 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.generateKeyPairDialog.keyPairGenerated.connect(self.generate_key_pair)
         self.generateKeyPairDialog.exec_()
         self.generateKeyPairDialog = None
+
+    def open_import_key_dialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        filePath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose the key file",
+            "",
+            "PEM Files (*.pem);;All Files(*)",
+            options=options
+        )
+
+        # if filePath is None or filePath == "":
+        #     return
+
+        self.importDialog = ImportDialog(self)
+        self.importDialog.keyImported.connect(self.import_key)
+        self.importDialog.exec_()
+        self.importDialog = None
 
     def open_send_message_dialog(self):
         self.sendMessageDialog = SendMessageDialog(self)
@@ -70,8 +95,12 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
         print(f"Name: {name}, Email: {email}, Key size: {keySize}, Password: {password}")
 
+    def import_key(self, name, email, passphrase):
+        print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
+
     def send_message(self, publicKey, privateKey, algorithm, message):
-        print(f"Public key: {publicKey}, Private key: {privateKey}, Encryption algorithm: {algorithm}, Message: {message}")
+        print(f"Public key: {publicKey}, Private key: {privateKey}")
+        print(f"Encryption algorithm: {algorithm}, Message: {message}")
 
     def receive_message(self, message):
         print(f"Message: {message}")
@@ -95,6 +124,26 @@ class GenerateKeyPairDialog(QDialog, Ui_GenerateKeyPairDialog):
         password = self.passLineEdit.text()
 
         self.keyPairGenerated.emit(name, email, keySize, password)
+        self.accept()
+
+
+class ImportDialog(QDialog, Ui_ImportKeyDialog):
+    keyImported = pyqtSignal(str, str, str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.setup_connections()
+
+    def setup_connections(self):
+        self.buttonBox.accepted.connect(self.on_accept)
+
+    def on_accept(self):
+        name = self.nameLineEdit.text()
+        email = self.emailLineEdit.text()
+        passphrase = self.passphraseLineEdit.text()
+
+        self.keyImported.emit(name, email, passphrase)
         self.accept()
 
 
