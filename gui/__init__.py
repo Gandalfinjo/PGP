@@ -1,6 +1,11 @@
+import json
+import os
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
+
+from core.keyring import Keyring
 
 from gui.import_key import Ui_ImportKeyDialog
 from gui.main_window import Ui_MainWindow
@@ -12,12 +17,16 @@ from gui.receive_message import Ui_ReceiveMessageDialog
 class PGPApp(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.key_sizes = [1024, 2048]
         self.generateKeyPairDialog = None
         self.importDialog = None
         self.sendMessageDialog = None
         self.receiveMessageDialog = None
+        self.keyring = Keyring()
         self.setupUi(self)
         self.setup_connections()
+        self.load_private_keys()
+        self.load_public_keys()
 
     def setup_connections(self):
         self.generateButton.clicked.connect(self.open_generate_key_pair_dialog)
@@ -31,6 +40,46 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
         self.receiveButton.clicked.connect(self.open_receive_message_dialog)
         self.actionReceive.triggered.connect(self.open_receive_message_dialog)
+
+    def load_private_keys(self):
+        self.privateTableWidget.clearContents()
+        path = "data/private_keys/private_keyring.json"
+
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            with open(path, "r") as file:
+                keys = json.load(file)
+
+            self.privateTableWidget.setRowCount(len(keys))
+            for i in range(len(keys)):
+                self.privateTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
+                self.privateTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
+                self.privateTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
+                self.privateTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
+
+            # self.privateTableWidget.setRowCount(len(data))
+            # for i, item in enumerate(data):
+            #     for j, value in enumerate(item.values()):
+            #         self.privateTableWidget.setItem(i, j, QtWidgets.QTableWidgetItem(str(value)))
+
+    def load_public_keys(self):
+        self.publicTableWidget.clearContents()
+        path = "data/public_keys/public_keyring.json"
+
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            with open(path, "r") as file:
+                keys = json.load(file)
+
+            self.publicTableWidget.setRowCount(len(keys))
+            for i in range(len(keys)):
+                self.publicTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
+                self.publicTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
+                self.publicTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
+                self.publicTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
+
+            # self.publicTableWidget.setRowCount(len(keys))
+            # for i, item in enumerate(keys):
+            #     for j, value in enumerate(item.values()):
+            #         self.publicTableWidget.setItem(i, j, QtWidgets.QTableWidgetItem(str(value)))
 
     def open_generate_key_pair_dialog(self):
         self.generateKeyPairDialog = GenerateKeyPairDialog(self)
@@ -88,12 +137,17 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.receiveMessageDialog.exec_()
         self.receiveMessageDialog = None
 
-    def generate_key_pair(self, name, email, keySize, password):
+    def generate_key_pair(self, name, email, key_size, password):
         if password is None or password == "":
             self.statusbar.showMessage(f"Missing password", 4000)
             return
 
-        print(f"Name: {name}, Email: {email}, Key size: {keySize}, Password: {password}")
+        private_key, public_key = self.keyring.generate_key_pair(name, email, self.key_sizes[key_size], password)
+        self.load_private_keys()
+        self.load_public_keys()
+
+        # print(f"Name: {name}, Email: {email}, Key size: {self.key_sizes[key_size]}, Password: {password}")
+        # print(f"Private key: {private_key}, Public key: {public_key}")
 
     def import_key(self, name, email, passphrase):
         print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
@@ -107,7 +161,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
 
 class GenerateKeyPairDialog(QDialog, Ui_GenerateKeyPairDialog):
-    keyPairGenerated = pyqtSignal(str, str, str, str)
+    keyPairGenerated = pyqtSignal(str, str, int, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -120,10 +174,10 @@ class GenerateKeyPairDialog(QDialog, Ui_GenerateKeyPairDialog):
     def on_accept(self):
         name = self.nameLineEdit.text()
         email = self.emailLineEdit.text()
-        keySize = self.comboBox.currentText()
+        key_size = self.comboBox.currentIndex()
         password = self.passLineEdit.text()
 
-        self.keyPairGenerated.emit(name, email, keySize, password)
+        self.keyPairGenerated.emit(name, email, key_size, password)
         self.accept()
 
 
