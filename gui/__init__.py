@@ -1,6 +1,3 @@
-import json
-import os
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
@@ -42,39 +39,36 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.actionReceive.triggered.connect(self.open_receive_message_dialog)
 
     def load_private_keys(self):
-        self.privateTableWidget.clearContents()
-        path = "data/private_keys/private_keyring.json"
+        keys = self.keyring.get_private_keys()
+        self.privateTableWidget.setRowCount(len(keys))
+        for i in range(len(keys)):
+            self.privateTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
+            self.privateTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
+            self.privateTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
+            self.privateTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
 
-        if os.path.exists(path) and os.path.getsize(path) > 0:
-            with open(path, "r") as file:
-                keys = json.load(file)
-
-            self.privateTableWidget.setRowCount(len(keys))
-            for i in range(len(keys)):
-                self.privateTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
-                self.privateTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
-                self.privateTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
-                self.privateTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
-
-            # self.privateTableWidget.setRowCount(len(data))
-            # for i, item in enumerate(data):
-            #     for j, value in enumerate(item.values()):
-            #         self.privateTableWidget.setItem(i, j, QtWidgets.QTableWidgetItem(str(value)))
+        # self.privateTableWidget.clearContents()
+        # path = "data/private_keys/private_keyring.json"
+        #
+        # if os.path.exists(path) and os.path.getsize(path) > 0:
+        #     with open(path, "r") as file:
+        #         keys = json.load(file)
+        #
+        #     self.privateTableWidget.setRowCount(len(keys))
+        #     for i in range(len(keys)):
+        #         self.privateTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
+        #         self.privateTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
+        #         self.privateTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
+        #         self.privateTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
 
     def load_public_keys(self):
-        self.publicTableWidget.clearContents()
-        path = "data/public_keys/public_keyring.json"
-
-        if os.path.exists(path) and os.path.getsize(path) > 0:
-            with open(path, "r") as file:
-                keys = json.load(file)
-
-            self.publicTableWidget.setRowCount(len(keys))
-            for i in range(len(keys)):
-                self.publicTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
-                self.publicTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
-                self.publicTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
-                self.publicTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
+        keys = self.keyring.get_public_keys()
+        self.publicTableWidget.setRowCount(len(keys))
+        for i in range(len(keys)):
+            self.publicTableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(keys[i]["name"]))
+            self.publicTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(keys[i]["email"]))
+            self.publicTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(str(keys[i]["key_size"])))
+            self.publicTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(keys[i]["key_id"][2:]))
 
             # self.publicTableWidget.setRowCount(len(keys))
             # for i, item in enumerate(keys):
