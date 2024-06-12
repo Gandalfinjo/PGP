@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SendMessageDialog</class>
- <widget class="QDialog" name="SendMessageDialog">
+ <class>ReceiveMessageDialog</class>
+ <widget class="QDialog" name="ReceiveMessageDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Send Message</string>
+   <string>Receive Message</string>
   </property>
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
@@ -29,6 +29,67 @@
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
    </property>
   </widget>
+  <widget class="QCheckBox" name="compressedCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>90</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Compressed</string>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="encryptedCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>30</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Encrypted</string>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="signedCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>60</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Signed</string>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="publicLabel">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>110</y>
+     <width>131</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Public key for encryption:</string>
+   </property>
+  </widget>
   <widget class="QTextEdit" name="messageText">
    <property name="geometry">
     <rect>
@@ -37,6 +98,51 @@
      <width>561</width>
      <height>231</height>
     </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="algorithmLabel">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>150</y>
+     <width>131</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Encryption algorithm:</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="convertedCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>120</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Radix-64 Converted</string>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="privateLabel">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>70</y>
+     <width>131</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Private key for signing:</string>
    </property>
   </widget>
   <widget class="QLabel" name="messageLabel">
@@ -52,136 +158,70 @@
     <string>Message:</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="encryptionCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>30</y>
-     <width>70</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Encryption</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="signCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>60</y>
-     <width>70</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Sign</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="compressCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>90</y>
-     <width>70</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Compress</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="convertCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>120</y>
-     <width>121</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Radix-64 Convert</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="privateComboBox">
-   <property name="geometry">
-    <rect>
-     <x>480</x>
-     <y>30</y>
-     <width>121</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="privateLabel">
-   <property name="geometry">
-    <rect>
-     <x>340</x>
-     <y>30</y>
-     <width>131</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Private key for signing:</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="publicLabel">
-   <property name="geometry">
-    <rect>
-     <x>340</x>
-     <y>70</y>
-     <width>131</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Public key for encryption:</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="publicComboBox">
+  <widget class="QLineEdit" name="privateLineEdit">
    <property name="geometry">
     <rect>
      <x>480</x>
      <y>70</y>
      <width>121</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
-  </widget>
-  <widget class="QLabel" name="algorithmLabel">
-   <property name="geometry">
-    <rect>
-     <x>340</x>
-     <y>110</y>
-     <width>131</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Encryption algorithm:</string>
+   <property name="readOnly">
+    <bool>true</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="algorithmComboBox">
+  <widget class="QLineEdit" name="publicLineEdit">
    <property name="geometry">
     <rect>
      <x>480</x>
      <y>110</y>
      <width>121</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
-   <item>
-    <property name="text">
-     <string>Triple DES</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>AES-128</string>
-    </property>
-   </item>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="algorithmLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>480</x>
+     <y>150</y>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="verificationLabel">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>30</y>
+     <width>131</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Verification:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="verificationLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>480</x>
+     <y>30</y>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
   </widget>
  </widget>
  <resources/>
@@ -189,7 +229,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>SendMessageDialog</receiver>
+   <receiver>ReceiveMessageDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -205,7 +245,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>SendMessageDialog</receiver>
+   <receiver>ReceiveMessageDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

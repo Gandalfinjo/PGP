@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
 from gui.main_window import Ui_MainWindow
 from gui.generate_key_pair import Ui_GenerateKeyPairDialog
 from gui.send_message import Ui_SendMessageDialog
+from gui.receive_message import Ui_ReceiveMessageDialog
 
 
 class PGPApp(QMainWindow, Ui_MainWindow):
@@ -12,6 +13,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.generateKeyPairDialog = None
         self.sendMessageDialog = None
+        self.receiveMessageDialog = None
         self.setupUi(self)
         self.setup_connections()
 
@@ -21,6 +23,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
         self.sendButton.clicked.connect(self.open_send_message_dialog)
         self.actionSend.triggered.connect(self.open_send_message_dialog)
+
+        self.receiveButton.clicked.connect(self.open_receive_message_dialog)
+        self.actionReceive.triggered.connect(self.open_receive_message_dialog)
 
     def open_generate_key_pair_dialog(self):
         self.generateKeyPairDialog = GenerateKeyPairDialog(self)
@@ -34,6 +39,30 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.sendMessageDialog.exec_()
         self.sendMessageDialog = None
 
+    def open_receive_message_dialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        filePath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Choose the message file",
+            "",
+            "Message Files (*.msg);;All Files(*)",
+            options=options
+        )
+
+        if filePath is None or filePath == "":
+            return
+
+        self.receiveMessageDialog = ReceiveMessageDialog(self)
+
+        with open(filePath, "r") as file:
+            self.receiveMessageDialog.messageText.setPlainText(file.read())
+
+        self.receiveMessageDialog.messageSaved.connect(self.receive_message)
+        self.receiveMessageDialog.exec_()
+        self.receiveMessageDialog = None
+
     def generate_key_pair(self, name, email, keySize, password):
         if password is None or password == "":
             self.statusbar.showMessage(f"Missing password", 4000)
@@ -43,6 +72,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
     def send_message(self, publicKey, privateKey, algorithm, message):
         print(f"Public key: {publicKey}, Private key: {privateKey}, Encryption algorithm: {algorithm}, Message: {message}")
+
+    def receive_message(self, message):
+        print(f"Message: {message}")
 
 
 class GenerateKeyPairDialog(QDialog, Ui_GenerateKeyPairDialog):
@@ -109,5 +141,43 @@ class SendMessageDialog(QDialog, Ui_SendMessageDialog):
         if sign:
             privateKey = self.privateComboBox.currentText()
 
+        with open(filePath, "w") as file:
+            file.write(message)
+
         self.messageCreated.emit(publicKey, privateKey, algorithm, message)
+        self.accept()
+
+
+class ReceiveMessageDialog(QDialog, Ui_ReceiveMessageDialog):
+    messageSaved = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.setup_connections()
+
+    def setup_connections(self):
+        self.buttonBox.accepted.connect(self.on_accept)
+
+    def on_accept(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        filePath, _ = QFileDialog.getSaveFileName(
+            self,
+            "Choose the decrypted message location",
+            "",
+            "Message Files (*.msg);;All Files(*)",
+            options=options
+        )
+
+        if filePath is None or filePath == "":
+            return
+
+        message = self.messageText.toPlainText()
+
+        with open(filePath, "w") as file:
+            file.write(message)
+
+        self.messageSaved.emit(message)
         self.accept()
