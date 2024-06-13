@@ -4,9 +4,10 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
 
 from core.keyring import Keyring
 
-from gui.import_key import Ui_ImportKeyDialog
 from gui.main_window import Ui_MainWindow
 from gui.generate_key_pair import Ui_GenerateKeyPairDialog
+from gui.delete_key_pair import Ui_DeleteKeyPairDialog
+from gui.import_key import Ui_ImportKeyDialog
 from gui.send_message import Ui_SendMessageDialog
 from gui.receive_message import Ui_ReceiveMessageDialog
 
@@ -16,6 +17,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.key_sizes = [1024, 2048]
         self.generateKeyPairDialog = None
+        self.deleteKeyPairDialog = None
         self.importDialog = None
         self.sendMessageDialog = None
         self.receiveMessageDialog = None
@@ -28,6 +30,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
     def setup_connections(self):
         self.generateButton.clicked.connect(self.open_generate_key_pair_dialog)
         self.actionGenerate.triggered.connect(self.open_generate_key_pair_dialog)
+
+        self.deleteButton.clicked.connect(self.open_delete_key_pair_dialog)
+        self.actionDelete.triggered.connect(self.open_delete_key_pair_dialog)
 
         self.importButton.clicked.connect(self.open_import_key_dialog)
         self.actionImport.triggered.connect(self.open_import_key_dialog)
@@ -79,6 +84,12 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.generateKeyPairDialog = GenerateKeyPairDialog(self)
         self.generateKeyPairDialog.keyPairGenerated.connect(self.generate_key_pair)
         self.generateKeyPairDialog.exec_()
+        self.generateKeyPairDialog = None
+
+    def open_delete_key_pair_dialog(self):
+        self.deleteKeyPairDialog = DeleteKeyPairDialog(self.keyring.get_private_keys(), self)
+        self.deleteKeyPairDialog.keyPairChosen.connect(self.delete_key_pair)
+        self.deleteKeyPairDialog.exec_()
         self.generateKeyPairDialog = None
 
     def open_import_key_dialog(self):
@@ -143,6 +154,17 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         # print(f"Name: {name}, Email: {email}, Key size: {self.key_sizes[key_size]}, Password: {password}")
         # print(f"Private key: {private_key}, Public key: {public_key}")
 
+    def delete_key_pair(self, key_id):
+        keys = self.keyring.get_private_keys()
+
+        if not keys:
+            self.statusbar.showMessage("No keys available for deletion", 4000)
+            return
+
+        self.keyring.delete_key_pair(key_id)
+        self.load_private_keys()
+        self.load_public_keys()
+
     def import_key(self, name, email, passphrase):
         print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
 
@@ -172,6 +194,25 @@ class GenerateKeyPairDialog(QDialog, Ui_GenerateKeyPairDialog):
         password = self.passLineEdit.text()
 
         self.keyPairGenerated.emit(name, email, key_size, password)
+        self.accept()
+
+
+class DeleteKeyPairDialog(QDialog, Ui_DeleteKeyPairDialog):
+    keyPairChosen = pyqtSignal(str)
+
+    def __init__(self, keys, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.setup_connections()
+
+        for key in keys:
+            self.comboBox.addItem(f"{key["name"]}, {key["email"]} - {key["key_id"][2:]}", key["key_id"])
+
+    def setup_connections(self):
+        self.buttonBox.accepted.connect(self.on_accept)
+
+    def on_accept(self):
+        self.keyPairChosen.emit(self.comboBox.currentData())
         self.accept()
 
 
