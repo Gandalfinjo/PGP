@@ -8,6 +8,7 @@ from gui.main_window import Ui_MainWindow
 from gui.generate_key_pair import Ui_GenerateKeyPairDialog
 from gui.delete_key_pair import Ui_DeleteKeyPairDialog
 from gui.import_key import Ui_ImportKeyDialog
+from gui.export_key import Ui_ExportKeyDialog
 from gui.send_message import Ui_SendMessageDialog
 from gui.receive_message import Ui_ReceiveMessageDialog
 
@@ -19,6 +20,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.generateKeyPairDialog = None
         self.deleteKeyPairDialog = None
         self.importDialog = None
+        self.exportDialog = None
         self.sendMessageDialog = None
         self.receiveMessageDialog = None
         self.keyring = Keyring()
@@ -36,6 +38,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
         self.importButton.clicked.connect(self.open_import_key_dialog)
         self.actionImport.triggered.connect(self.open_import_key_dialog)
+
+        self.exportButton.clicked.connect(self.open_export_key_dialog)
+        self.actionExport.triggered.connect(self.open_export_key_dialog)
 
         self.sendButton.clicked.connect(self.open_send_message_dialog)
         self.actionSend.triggered.connect(self.open_send_message_dialog)
@@ -112,6 +117,12 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.importDialog.exec_()
         self.importDialog = None
 
+    def open_export_key_dialog(self):
+        self.exportDialog = ExportKeyDialog(self.keyring.get_private_keys(), self)
+        self.exportDialog.keyExported.connect(self.export_key)
+        self.exportDialog.exec_()
+        self.exportDialog = None
+
     def open_send_message_dialog(self):
         self.sendMessageDialog = SendMessageDialog(self)
         self.sendMessageDialog.messageCreated.connect(self.send_message)
@@ -167,6 +178,9 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
     def import_key(self, name, email, passphrase):
         print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
+
+    def export_key(self, key_id, onlyPublic, wholePair):
+        print(f"Exporting key with id: {key_id}, {onlyPublic}, {wholePair}")
 
     def send_message(self, publicKey, privateKey, algorithm, message):
         print(f"Public key: {publicKey}, Private key: {privateKey}")
@@ -233,6 +247,41 @@ class ImportDialog(QDialog, Ui_ImportKeyDialog):
         passphrase = self.passphraseLineEdit.text()
 
         self.keyImported.emit(name, email, passphrase)
+        self.accept()
+
+
+class ExportKeyDialog(QDialog, Ui_ExportKeyDialog):
+    keyExported = pyqtSignal(str, bool, bool)
+
+    def __init__(self, keys, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.setup_connections()
+
+        for key in keys:
+            self.comboBox.addItem(f"{key["name"]}, {key["email"]} - {key["key_id"][2:]}", key["key_id"])
+
+    def setup_connections(self):
+        self.buttonBox.accepted.connect(self.on_accept)
+
+    def on_accept(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        filePath, _ = QFileDialog.getSaveFileName(
+            self,
+            "Choose the location for the exported key",
+            "",
+            "PEM Files (*.pem);;All Files(*)",
+            options=options
+        )
+
+        if filePath is None or filePath == "":
+            return
+
+        onlyPublic = self.publicRadioButton.isChecked()
+        wholePair = self.pairRadioButton.isChecked()
+        self.keyExported.emit(self.comboBox.currentData(), onlyPublic, wholePair)
         self.accept()
 
 
