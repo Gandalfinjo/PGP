@@ -179,8 +179,16 @@ class PGPApp(QMainWindow, Ui_MainWindow):
     def import_key(self, name, email, passphrase):
         print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
 
-    def export_key(self, key_id, onlyPublic, wholePair):
-        print(f"Exporting key with id: {key_id}, {onlyPublic}, {wholePair}")
+    def export_key(self, key_id, onlyPublic, wholePair, filePath):
+        with open(filePath, "w") as file:
+            if onlyPublic:
+                key = self.keyring.export_key(key_id, False)
+                file.write(key["public_key"])
+            elif wholePair:
+                key = self.keyring.export_key(key_id, True)
+                file.write(key["private_key"])
+                file.write("\n")
+                file.write(key["public_key"])
 
     def send_message(self, publicKey, privateKey, algorithm, message):
         print(f"Public key: {publicKey}, Private key: {privateKey}")
@@ -251,12 +259,13 @@ class ImportDialog(QDialog, Ui_ImportKeyDialog):
 
 
 class ExportKeyDialog(QDialog, Ui_ExportKeyDialog):
-    keyExported = pyqtSignal(str, bool, bool)
+    keyExported = pyqtSignal(str, bool, bool, str)
 
     def __init__(self, keys, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.setup_connections()
+        self.keys = keys
 
         for key in keys:
             self.comboBox.addItem(f"{key["name"]}, {key["email"]} - {key["key_id"][2:]}", key["key_id"])
@@ -281,7 +290,7 @@ class ExportKeyDialog(QDialog, Ui_ExportKeyDialog):
 
         onlyPublic = self.publicRadioButton.isChecked()
         wholePair = self.pairRadioButton.isChecked()
-        self.keyExported.emit(self.comboBox.currentData(), onlyPublic, wholePair)
+        self.keyExported.emit(self.comboBox.currentData(), onlyPublic, wholePair, filePath)
         self.accept()
 
 

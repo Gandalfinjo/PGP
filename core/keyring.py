@@ -37,6 +37,7 @@ class Keyring:
             "key_size": key_size,
             "key_id": key_id,
             "private_key": private_key,
+            "public_key": public_key,
             "timestamp": timestamp
         }
 
