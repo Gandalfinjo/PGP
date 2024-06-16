@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from Crypto.PublicKey import RSA
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
@@ -92,7 +95,11 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.generateKeyPairDialog = None
 
     def open_delete_key_pair_dialog(self):
-        self.deleteKeyPairDialog = DeleteKeyPairDialog(self.keyring.get_private_keys(), self)
+        keys = self.keyring.get_private_keys()
+        if not keys:
+            keys = self.keyring.get_public_keys()
+
+        self.deleteKeyPairDialog = DeleteKeyPairDialog(keys, self)
         self.deleteKeyPairDialog.keyPairChosen.connect(self.delete_key_pair)
         self.deleteKeyPairDialog.exec_()
         self.generateKeyPairDialog = None
@@ -109,11 +116,11 @@ class PGPApp(QMainWindow, Ui_MainWindow):
             options=options
         )
 
-        # if filePath is None or filePath == "":
-        #     return
+        if filePath is None or filePath == "":
+            return
 
         self.importDialog = ImportDialog(self)
-        self.importDialog.keyImported.connect(self.import_key)
+        self.importDialog.keyImported.connect(lambda name, email, passphrase: self.import_key(filePath, name, email, passphrase))
         self.importDialog.exec_()
         self.importDialog = None
 
@@ -124,7 +131,7 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         self.exportDialog = None
 
     def open_send_message_dialog(self):
-        self.sendMessageDialog = SendMessageDialog(self)
+        self.sendMessageDialog = SendMessageDialog(self.keyring.get_private_keys(), self.keyring.get_public_keys(), self)
         self.sendMessageDialog.messageCreated.connect(self.send_message)
         self.sendMessageDialog.exec_()
         self.sendMessageDialog = None
@@ -169,23 +176,135 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         keys = self.keyring.get_private_keys()
 
         if not keys:
-            self.statusbar.showMessage("No keys available for deletion", 4000)
-            return
+            keys = self.keyring.get_public_keys()
+            if not keys:
+                self.statusbar.showMessage("No keys available for deletion", 4000)
+                return
 
         self.keyring.delete_key_pair(key_id)
         self.load_private_keys()
         self.load_public_keys()
 
-    def import_key(self, name, email, passphrase):
-        print(f"Name: {name}, Email: {email}, Passphrase: {passphrase}")
+    def import_key(self, filePath, name, email, passphrase):
+        try:
+            with open(filePath, "r") as file:
+                key_data = file.read()
+
+            if "PRIVATE KEY" in key_data:
+                key_parts = key_data.split("-----END RSA PRIVATE KEY-----")
+                key_parts[0] += "-----END RSA PRIVATE KEY-----"
+                key_parts[1].strip()
+
+                private_key_part = key_parts[0]
+                public_key_part = key_parts[1]
+
+                choice, ok = QtWidgets.QInputDialog.getItem(
+                    self, "Import Key", "Choose part/s to import:",
+                    ["Public Key Only", "Whole Key Pair"], 0, False
+                )
+
+                if not ok:
+                    return
+
+                if choice == "Whole Key Pair":
+                    try:
+                        key = RSA.import_key(private_key_part, passphrase=passphrase)
+                        private_key = key.export_key(passphrase=passphrase).decode()
+                        public_key = key.public_key().export_key().decode()
+                        key_id = self.keyring.calculate_key_id(key)
+                        key_size = key.size_in_bits()
+                        timestamp = datetime.now().isoformat()
+
+                        private_key_entry = {
+                            "name": name,
+                            "email": email,
+                            "key_size": key_size,
+                            "key_id": key_id,
+                            "private_key": private_key,
+                            "public_key": public_key,
+                            "timestamp": timestamp
+                        }
+
+                        public_key_entry = {
+                            "name": name,
+                            "email": email,
+                            "key_size": key_size,
+                            "key_id": key_id,
+                            "public_key": public_key,
+                            "timestamp": timestamp
+                        }
+
+                        self.keyring.private_keyring.append(private_key_entry)
+                        self.keyring.public_keyring.append(public_key_entry)
+
+                        self.keyring.save_keyring(self.keyring.private_keyring_path, self.keyring.private_keyring)
+                        self.keyring.save_keyring(self.keyring.public_keyring_path, self.keyring.public_keyring)
+
+                        self.load_private_keys()
+                        self.load_public_keys()
+                    except ValueError:
+                        QtWidgets.QMessageBox.warning(self, "Invalid Passphrase", "The passphrase is incorrect. Please try again.")
+                        return
+                else:
+                    key = RSA.import_key(private_key_part, passphrase=passphrase)
+                    public_key = key.public_key().export_key().decode()
+                    key_id = self.keyring.calculate_key_id(key)
+                    key_size = key.size_in_bits()
+                    timestamp = datetime.now().isoformat()
+
+                    public_key_entry = {
+                        "name": name,
+                        "email": email,
+                        "key_size": key_size,
+                        "key_id": key_id,
+                        "public_key": public_key,
+                        "timestamp": timestamp
+                    }
+
+                    self.keyring.public_keyring.append(public_key_entry)
+                    self.keyring.save_keyring(self.keyring.public_keyring_path, self.keyring.public_keyring)
+                    self.load_public_keys()
+            else:
+                key = RSA.import_key(key_data)
+                public_key = key.public_key().export_key().decode()
+                key_id = self.keyring.calculate_key_id(key)
+                key_size = key.size_in_bits()
+                timestamp = datetime.now().isoformat()
+
+                public_key_entry = {
+                    "name": name,
+                    "email": email,
+                    "key_size": key_size,
+                    "key_id": key_id,
+                    "public_key": public_key,
+                    "timestamp": timestamp
+                }
+
+                self.keyring.public_keyring.append(public_key_entry)
+                self.keyring.save_keyring(self.keyring.public_keyring_path, self.keyring.public_keyring)
+                self.load_public_keys()
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Error", f"An error occured: {e}")
 
     def export_key(self, key_id, onlyPublic, wholePair, filePath):
+        key = self.keyring.export_key(key_id, wholePair)
+
+        if wholePair:
+            passphrase, ok = QtWidgets.QInputDialog.getText(self, "Passphrase", "Enter passphrase:", QtWidgets.QLineEdit.Password)
+
+            if not ok:
+                return
+
+            try:
+                RSA.import_key(key["private_key"], passphrase=passphrase)
+            except ValueError:
+                QtWidgets.QMessageBox.warning(self, "Invalid Passphrase", "The passphrase is incorrect. Please try again.")
+                return
+
         with open(filePath, "w") as file:
             if onlyPublic:
-                key = self.keyring.export_key(key_id, False)
                 file.write(key["public_key"])
             elif wholePair:
-                key = self.keyring.export_key(key_id, True)
                 file.write(key["private_key"])
                 file.write("\n")
                 file.write(key["public_key"])
@@ -297,12 +416,20 @@ class ExportKeyDialog(QDialog, Ui_ExportKeyDialog):
 class SendMessageDialog(QDialog, Ui_SendMessageDialog):
     messageCreated = pyqtSignal(str, str, str, str)
 
-    def __init__(self, parent=None):
+    def __init__(self, private_keys, public_keys, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.setup_connections()
         self.privateComboBox.clear()
         self.publicComboBox.clear()
+        self.private_keys = private_keys
+        self.public_keys = public_keys
+
+        for key in private_keys:
+            self.privateComboBox.addItem(f"{key["name"]}, {key["email"]}", key["key_id"])
+
+        for key in public_keys:
+            self.publicComboBox.addItem(f"{key["name"]}, {key["email"]}", key["key_id"])
 
     def setup_connections(self):
         self.buttonBox.accepted.connect(self.on_accept)
