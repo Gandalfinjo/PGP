@@ -1,6 +1,13 @@
+import zlib
+from base64 import b64encode
 from datetime import datetime
 
+from Crypto.Cipher import PKCS1_OAEP, AES, DES3
+from Crypto.Hash import SHA1
 from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Signature import pkcs1_15
+from Crypto.Util.Padding import pad
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
@@ -309,9 +316,87 @@ class PGPApp(QMainWindow, Ui_MainWindow):
                 file.write("\n")
                 file.write(key["public_key"])
 
-    def send_message(self, publicKey, privateKey, algorithm, message):
-        print(f"Public key: {publicKey}, Private key: {privateKey}")
-        print(f"Encryption algorithm: {algorithm}, Message: {message}")
+    def send_message(self, public_key_id: str, private_key_id: str, algorithm: str, message: str, compress, convertR64, filePath):
+        encrypted_ks = ""
+        try:
+            public_key = None
+            if public_key_id:
+                public_key_entry = next((key for key in self.keyring.get_public_keys() if key["key_id"] == public_key_id), None)
+                if public_key_entry:
+                    public_key = RSA.import_key(public_key_entry["public_key"])
+
+            private_key = None
+            if private_key_id:
+                private_key_entry = next((key for key in self.keyring.get_private_keys() if key["key_id"] == private_key_id), None)
+                if private_key_entry:
+                    passphrase, ok = QtWidgets.QInputDialog.getText(self, "Passphrase", "Enter passphrase:", QtWidgets.QLineEdit.Password)
+
+                    if not ok:
+                        return
+
+                    try:
+                        private_key = RSA.import_key(private_key_entry["private_key"], passphrase=passphrase)
+                    except ValueError:
+                        QtWidgets.QMessageBox.warning(self, "Invalid Passphrase", "The passphrase is incorrect. Please try again.")
+                        return
+
+            if private_key:
+                h = SHA1.new(message.encode())
+                signature = str(pkcs1_15.new(private_key).sign(h))[2:-1]
+                timestamp = datetime.now().isoformat()
+
+                signed_message = message + "\n" + signature + "\n" + private_key_id + "\n" + timestamp
+            else:
+                signed_message = message
+
+            if public_key:
+                rsa_cipher = PKCS1_OAEP.new(public_key)
+                session_key = get_random_bytes(16 if algorithm == "AES128" else 24)
+
+                if algorithm == "AES-128":
+                    symmetric_cipher = AES.new(session_key, AES.MODE_CFB)
+                elif algorithm == "Triple DES":
+                    symmetric_cipher = DES3.new(session_key, DES3.MODE_CFB)
+                else:
+                    raise ValueError("Unsupported algorithm")
+
+                ciphertext = str(symmetric_cipher.encrypt(pad(signed_message.encode(), AES.block_size)))[2:-1]
+                encrypted_ks = str(rsa_cipher.encrypt(session_key))[2:-1]
+                iv = symmetric_cipher.iv
+                timestamp = datetime.now().isoformat()
+
+                encrypted_message = ciphertext + "\n" + timestamp
+                print("----------------------------------------------------\n")
+                print(encrypted_message)
+            else:
+                encrypted_message = signed_message
+
+            if compress:
+                encrypted_message = str(zlib.compress(encrypted_message.encode()))[2:-1]
+                print("-----------------------------------\n")
+                print(encrypted_message)
+
+            encrypted_message += encrypted_ks
+            print("------------------------\n")
+            print(encrypted_message)
+            encrypted_message += public_key_id
+            print("------------------------\n")
+            print(encrypted_message)
+
+            if convertR64:
+                encrypted_message = b64encode(encrypted_message.encode()).decode()
+                print("------------------------\n")
+                print(encrypted_message)
+
+            with open(filePath, "w") as file:
+                file.write(encrypted_message)
+
+            self.statusbar.showMessage(f"Message saved to {filePath}", 4000)
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Error", f"An error occurred: {e}")
+
+        # print(f"Public key: {public_key_id}, Private key: {private_key_id}")
+        # print(f"Encryption algorithm: {algorithm}, Message: {message}")
 
     def receive_message(self, message):
         print(f"Message: {message}")
@@ -414,7 +499,7 @@ class ExportKeyDialog(QDialog, Ui_ExportKeyDialog):
 
 
 class SendMessageDialog(QDialog, Ui_SendMessageDialog):
-    messageCreated = pyqtSignal(str, str, str, str)
+    messageCreated = pyqtSignal(str, str, str, str, bool, bool, str)
 
     def __init__(self, private_keys, public_keys, parent=None):
         super().__init__(parent)
@@ -460,14 +545,14 @@ class SendMessageDialog(QDialog, Ui_SendMessageDialog):
         algorithm = self.algorithmComboBox.currentText()
 
         if encrypt:
-            publicKey = self.publicComboBox.currentText()
+            publicKey = self.publicComboBox.currentData()
         if sign:
-            privateKey = self.privateComboBox.currentText()
+            privateKey = self.privateComboBox.currentData()
 
         with open(filePath, "w") as file:
             file.write(message)
 
-        self.messageCreated.emit(publicKey, privateKey, algorithm, message)
+        self.messageCreated.emit(publicKey, privateKey, algorithm, message, compress, convertR64, filePath)
         self.accept()
 
 
