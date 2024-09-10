@@ -30,5 +30,13 @@
         "key_id": "0x2926eed5576a2cd",
         "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0IlGVC8faCZGsyd+M2jH\nje4p6FBePB+0UaFXIEgCjMlmkDnX0mlZJJhIKMLyHnLzoXKzQbLk1h/QW+pQPRl5\n/SS6zm/2SGP0HyCbnVR0/8Cq00tXExcc5fIo/XNlP2FQLea32BcAAbKf4WbeheAg\n22ebVAs68E5d9NFhh8B3Zm29x3/KZBxVWsRpoSisSDyAZ7tS4+SI7keufzAkkhGW\nH+L9rZWGAWXUEx2V60lm6erv1V2/6Pfj3ScrjtSDgoIwVCkrMLYPN1CJD8umgg4s\naTqtbY3KAI0MevH12Ll8OPE97h8vbYEWvzd1QtO/8q9mPj1C/+tJkvYCkm7tVXai\nzQIDAQAB\n-----END PUBLIC KEY-----",
         "timestamp": "2024-06-13T10:47:12.962267"
+    },
+    {
+        "name": "Zarko",
+        "email": "zare@gmail.com",
+        "key_size": 1024,
+        "key_id": "0xbc958ad5943b6fb3",
+        "public_key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDhJd+utDi6Bgxu+p+V8byKX133\niAFfdrI8dYZl+FZ8B+bzyZLzVmo1eJR7cIjCsAM6p7czy7srnjo6UoeOwU3fiGMD\nY0Mq3C4Y3BRBUg6acQ70c3Tk8s+SDMKBbZMmBPCYmQ1AXG0rySmCk5lm4q2nwk/s\ngwCcfl28lYrVlDtvswIDAQAB\n-----END PUBLIC KEY-----",
+        "timestamp": "2024-09-10T15:18:14.518650"
     }
 ]

@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog
 
 from core.keyring import Keyring
 
+from core.pgp_message import PGPMessage
 from gui.main_window import Ui_MainWindow
 from gui.generate_key_pair import Ui_GenerateKeyPairDialog
 from gui.delete_key_pair import Ui_DeleteKeyPairDialog
@@ -139,7 +140,8 @@ class PGPApp(QMainWindow, Ui_MainWindow):
 
     def open_send_message_dialog(self):
         self.sendMessageDialog = SendMessageDialog(self.keyring.get_private_keys(), self.keyring.get_public_keys(), self)
-        self.sendMessageDialog.messageCreated.connect(self.send_message)
+        # self.sendMessageDialog.messageCreated.connect(self.send_message)
+        self.sendMessageDialog.messageCreated.connect(self.send_message2)
         self.sendMessageDialog.exec_()
         self.sendMessageDialog = None
 
@@ -163,7 +165,8 @@ class PGPApp(QMainWindow, Ui_MainWindow):
         with open(filePath, "r") as file:
             self.receiveMessageDialog.messageText.setPlainText(file.read())
 
-        self.receiveMessageDialog.messageSaved.connect(self.receive_message)
+        # self.receiveMessageDialog.messageSaved.connect(self.receive_message)
+        self.receiveMessageDialog.messageSaved.connect(self.receive_message2)
         self.receiveMessageDialog.exec_()
         self.receiveMessageDialog = None
 
@@ -315,6 +318,69 @@ class PGPApp(QMainWindow, Ui_MainWindow):
                 file.write(key["private_key"])
                 file.write("\n")
                 file.write(key["public_key"])
+
+    def send_message2(self, public_key_id: str, private_key_id: str, algorithm: str, message: str, compress, convertR64, filePath):
+        try:
+            public_key = None
+            if public_key_id:
+                public_key_entry = next((key for key in self.keyring.get_public_keys() if key["key_id"] == public_key_id), None)
+                if public_key_entry:
+                    public_key = RSA.import_key(public_key_entry["public_key"])
+
+            private_key = None
+            if private_key_id:
+                private_key_entry = next((key for key in self.keyring.get_private_keys() if key["key_id"] == private_key_id), None)
+                if private_key_entry:
+                    passphrase, ok = QtWidgets.QInputDialog.getText(self, "Passphrase", "Enter passphrase:", QtWidgets.QLineEdit.Password)
+
+                    if not ok:
+                        return
+
+                    try:
+                        private_key = RSA.import_key(private_key_entry["private_key"], passphrase=passphrase)
+                    except ValueError:
+                        QtWidgets.QMessageBox.warning(self, "Invalid Passphrase", "The passphrase is incorrect. Please try again.")
+                        return
+
+            encrypted_message = PGPMessage.create_message(
+                public_key,
+                public_key_id,
+                private_key,
+                private_key_id,
+                message,
+                algorithm,
+                compress,
+                convertR64
+            )
+
+            with open(filePath, "w") as file:
+                file.write(encrypted_message)
+
+            self.statusbar.showMessage(f"Message saved to {filePath}", 4000)
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Error", f"An error occurred: {e}")
+
+    def receive_message2(self, filePath):
+        try:
+            with open(filePath, "r") as file:
+                encrypted_message = file.read()
+
+            private_key_id = self.get_private_key_id()  # Implement method to retrieve or select private key ID
+            private_key_entry = next((key for key in self.keyring.get_private_keys() if key["key_id"] == private_key_id), None)
+
+            if not private_key_entry:
+                QtWidgets.QMessageBox.warning(self, "Error", "Private key not found.")
+                return
+
+            private_key = RSA.import_key(private_key_entry["private_key"], passphrase=self.get_passphrase())
+            message = PGPMessage.parse_message(
+                encrypted_message=encrypted_message,
+                private_key=private_key
+            )
+
+            self.statusbar.showMessage(f"Message received: {message}", 4000)
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Error", f"An error occurred: {e}")
 
     def send_message(self, public_key_id: str, private_key_id: str, algorithm: str, message: str, compress, convertR64, filePath):
         encrypted_ks = ""
